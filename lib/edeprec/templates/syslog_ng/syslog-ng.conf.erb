@@ -1,0 +1,101 @@
+options {
+<%
+	_options = syslog_ng_options.merge(syslog_ng_is_server && syslog_ng_server && syslog_use_default_dynamic_settings ? {
+	:keep_hostname => :yes
+} : {})
+	_options.keys.sort { |a,b| a.to_s <=> b.to_s }.each do |key| value = _options[key]
+%><%= value.nil? ? "" : "		#{key}(#{value.is_a?(String) ? "\"#{value}\"" : value.to_s});\n" %><% end %>};
+
+<% _sources = syslog_ng_sources.merge(syslog_ng_is_server && syslog_ng_server && syslog_use_default_dynamic_settings ? {
+	:s_net => "tcp(ip(#{syslog_ng_server}) port(#{syslog_ng_server_port || 5140}) max-connections(#{syslog_ng_server_max_connections || 10}));"
+} : {})
+	_sources.keys.sort { |a,b| a.to_s <=> b.to_s }.each do |name| syslog_ng_source_list = _sources[name]
+%>source <%= name %> {
+<% [syslog_ng_source_list].flatten.sort { |a,b| a.to_s <=> b.to_s }.each do |syslog_ng_source|
+%><%= "		#{syslog_ng_source.gsub(/;$/, '')};\n" %><% end %>};
+
+<% end %><% syslog_ng_filters.keys.sort { |a,b| a.to_s <=> b.to_s }.each do |name| syslog_ng_filter_list = syslog_ng_filters[name]
+%>filter <%= name %> {
+<% [syslog_ng_filter_list].flatten.sort { |a,b| a.to_s <=> b.to_s }.each do |syslog_ng_filter|
+%><%= "		#{syslog_ng_filter.gsub(/;$/, '')};\n" %><% end %>};
+
+<% end %><% _destinations = syslog_ng_destinations.merge(syslog_ng_server.nil? || syslog_ng_is_server || !syslog_use_default_dynamic_settings ? {} : { :d_log_server => "tcp(\"#{syslog_ng_server}\" port(#{syslog_ng_server_port || 5140}));" })
+	_destinations.keys.sort { |a,b| a.to_s <=> b.to_s }.each do |name| syslog_ng_destination_list = _destinations[name]
+%>destination <%= name %> {
+<% [syslog_ng_destination_list].flatten.sort { |a,b| a.to_s <=> b.to_s }.each do |syslog_ng_destination|
+%><%= "		#{syslog_ng_destination.gsub(/;$/, '')};\n" %><% end %>};
+
+<% end %><% _logs = syslog_ng_logs.merge(syslog_ng_is_server && syslog_use_default_dynamic_settings ? {
+	# on syslog master/central server daemon
+	:s_net => {
+		:df_daemons => {
+			:filters => :f_daemons,
+			:flags => :final
+		},
+		:df_kernel => {
+			:filters => :f_kern,
+			:flags => :final
+		},
+		:df_local0 => {
+			:filters => :f_local0,
+			:flags => :final
+		},
+		:df_local1 => {
+			:filters => :f_local1,
+			:flags => :final
+		},
+		:df_local2 => {
+			:filters => :f_local2,
+			:flags => :final
+		},
+		:df_local3 => {
+			:filters => :f_local3,
+			:flags => :final
+		},
+		:df_local4 => {
+			:filters => :f_local4,
+			:flags => :final
+		},
+		:df_local5 => {
+			:filters => :f_local5,
+			:flags => :final
+		},
+		:df_local6 => {
+			:filters => :f_local6,
+			:flags => :final
+		},
+		:df_local7 => {
+			:filters => :f_local7,
+			:flags => :final
+		}
+	}
+} : {})
+	_logs.keys.sort { |a,b| a.to_s <=> b.to_s }.each do |source_name|
+	destinations_filters = _logs[source_name]
+	if source_name == :s_all && syslog_ng_server && syslog_use_default_dynamic_settings && !syslog_ng_is_server
+		# on syslog client daemon
+		destinations_filters.merge!(
+			[ :df_daemons, :d_log_server ] => { :filters => :f_daemons, :flags => :final },
+			[ :df_kernel, :d_log_server ] => { :filters => :f_kern, :flags => :final },
+			[ :df_local0, :d_log_server ] => { :filters => :f_local0, :flags => :final },
+			[ :df_local1, :d_log_server ] => { :filters => :f_local1, :flags => :final },
+			[ :df_local2, :d_log_server ] => { :filters => :f_local2, :flags => :final },
+			[ :df_local3, :d_log_server ] => { :filters => :f_local3, :flags => :final },
+			[ :df_local4, :d_log_server ] => { :filters => :f_local4, :flags => :final },
+			[ :df_local5, :d_log_server ] => { :filters => :f_local5, :flags => :final },
+			[ :df_local6, :d_log_server ] => { :filters => :f_local6, :flags => :final },
+			[ :df_local7, :d_log_server ] => { :filters => :f_local7, :flags => :final }
+		)
+	end
+   	destinations_filters.keys.sort { |a,b| a.to_s <=> b.to_s }.each do |destinations| filters = destinations_filters[destinations]
+%>log {
+		source(<%= source_name %>);
+<% [filters.is_a?(Hash) ? filters[:filters] : filters].flatten.sort { |a,b| a.to_s <=> b.to_s }.each do |syslog_filter|
+%>		filter(<%= syslog_filter %>);
+<% end %><% [destinations].flatten.sort { |a,b| a.to_s <=> b.to_s }.each do |destination|
+%>		destination(<%= destination %>);
+<% end %><% [filters.is_a?(Hash) ? filters[:flags] : []].flatten.sort { |a,b| a.to_s <=> b.to_s }.each do |flag|
+%>		flags(<%= flag %>);
+<% end %>};
+
+<% end end %>

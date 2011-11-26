@@ -1,0 +1,38 @@
+# touch /etc/keepalived/MASTER to make a BACKUP keepalived be MASTER. Remove it to make it BACKUP again.
+vrrp_script chk_wanted_state {
+        script "test -e /etc/keepalived/MASTER"
+        interval <%= keepalived_chk_wanted_state_interval || keepalived_default_script_interval %>
+        weight <%= keepalived_chk_wanted_state_weight || keepalived_default_script_weight %>
+}
+
+<% keepalived_scripts.each do |name, settings| %>
+vrrp_script chk_<%= name.to_s %> {
+        script "<%= settings[:script] %>"
+        interval <%= settings[:interval] || keepalived_default_script_interval %>
+        weight <%= settings[:weight] || keepalived_default_script_weight %>
+}
+<% end %>
+
+<% instance_counter = 1 %>
+<% keepalived_instances.each do |virtual_ipaddress, settings| %>
+vrrp_instance VI_<%= instance_counter %> {
+        interface <%= settings[:interface] %>
+        state <%= settings[:state] %>
+        virtual_router_id <%= settings[:virtual_router_id] %>
+        priority <%= settings[:priority] %>
+        virtual_ipaddress {
+            <%= virtual_ipaddress %>
+        }
+<% if settings[:state] != 'MASTER' %>
+	    track_script {
+	        chk_wanted_state
+	    }
+<% end %>
+<% (settings[:scripts].nil? || [settings[:scripts]].flatten.empty? ? keepalived_scripts.keys : [settings[:scripts]].flatten).each do |name| %>
+        track_script {
+            chk_<%= name.to_s %>
+        }
+<% end %>
+}
+<% instance_counter += 1 %>
+<% end %>

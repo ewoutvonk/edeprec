@@ -1,0 +1,152 @@
+#!/bin/bash
+# Copyright 2009-2010 by le1t0@github. All rights reserved.
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin:/usr/local/bin:/usr/local/sbin
+IPTABLES="<%= iptables_binary || "/sbin/iptables" %>"
+IPTABLES_SAVE="<%= iptables_save_binary || "/sbin/iptables-save" %>"
+
+test -x $IPTABLES || exit 0
+
+### SET /PROC VARIABLES
+# Kernel monitoring support
+# More information:
+# /usr/src/linux-`uname -r`/Documentation/networking/ip-sysctl.txt
+# http://www.linuxgazette.com/book/view/1645
+# http://www.spirit.com/Network/net0300.html
+# http://www.symantec.com/connect/articles/linux-firewall-related-proc-entries
+
+# Drop ICMP echo-request messages sent to broadcast or multicast addresses (Prevent Smurf attack)
+echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+
+# Drop source routed packets (Prevent abuse of trust relationships/TCP Wrapper acls)
+echo 0 > /proc/sys/net/ipv4/conf/all/accept_source_route
+
+# Enable TCP SYN cookie protection from SYN floods
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+
+# Ignore invalid ICMP answers
+echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+
+# Don't accept ICMP redirect messages (Prevent Man-In-The-Middle attacks)
+echo 0 > /proc/sys/net/ipv4/conf/all/accept_redirects
+
+# Don't send ICMP redirect messages
+echo 0 > /proc/sys/net/ipv4/conf/all/send_redirects<% if iptables_ipfrag_high_thresh || iptables_ipfrag_low_thresh || iptables_ipfrag_time %>
+
+# Prevent attack of many fragmented packets<% if iptables_ipfrag_high_thresh %>
+echo <%= iptables_ipfrag_high_thresh %> > /proc/sys/net/ipv4/ipfrag_high_thresh # memory usage in bytes<% end %><% if iptables_ipfrag_low_thresh %>
+echo <%= iptables_ipfrag_low_thresh %> > /proc/sys/net/ipv4/ipfrag_low_thresh # memory usage in bytes<% end %><% if iptables_ipfrag_time %>
+echo <%= iptables_ipfrag_time %> > /proc/sys/net/ipv4/ipfrag_time<% end %><% end %>
+
+# Enable source address spoofing protection
+echo 1 > /proc/sys/net/ipv4/conf/all/rp_filter
+
+# Log packets with impossible source addresses
+echo 1 > /proc/sys/net/ipv4/conf/all/log_martians	
+
+### FLUSH RULES
+if [ -x $IPTABLES_SAVE ]; then
+	tmpfile="/tmp/.firewall.save.$(date +"%Y%m%d%H%M%S").tmp"
+	# save current firewall FORWARD rules with physdev-in, these are necessary for the functioning of xen
+	$IPTABLES_SAVE -t filter | perl -ne "m/^-A FORWARD/ && m/physdev-in/ && print \"${IPTABLES} \" . \$_" > $tmpfile
+fi
+# flush default chains
+$IPTABLES -F -t nat
+$IPTABLES -F
+# delete all custom chains
+$IPTABLES -X
+# source, re-apply and remove saved rules of above
+if [ -x $IPTABLES_SAVE ]; then
+	. $tmpfile
+	rm -f $tmpfile
+fi
+
+### SET DEFAULT POLICIES
+if [ "$1" = "stop" ] ; then
+	$IPTABLES --policy INPUT ACCEPT
+	$IPTABLES --policy OUTPUT ACCEPT
+	$IPTABLES --policy FORWARD ACCEPT
+	exit 0
+else
+	$IPTABLES --policy INPUT DROP
+	$IPTABLES --policy OUTPUT ACCEPT
+	$IPTABLES --policy FORWARD ACCEPT
+fi
+
+### SET DEFAULT RULES
+# Allow unlimited traffic on the loopback interface
+$IPTABLES -A INPUT -i lo -j ACCEPT
+$IPTABLES -A OUTPUT -o lo -j ACCEPT
+
+# Previously initiated and accepted exchanges bypass rule checking
+$IPTABLES -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+# Allow unlimited outbound traffic
+$IPTABLES -A OUTPUT -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+
+# DROP/REJECT any traffic from known bad IPs
+$IPTABLES -A INPUT -m recent --name droplist --update -j DROP
+$IPTABLES -A INPUT -m recent --name rejectlist --update -j REJECT
+
+### SET RATE LIMITS
+<% iptables_rate_limits.split(/ /).each do |rate_limit|
+	net, rate, action = rate_limit.split(/[@;]/).collect { |x| x.empty? ? nil : x }
+	action ||= "DROP"
+	dest, intfs = net.split(/[\#]/).collect { |x| x.empty? ? nil : x }
+	intfs_array = intfs ? intfs.split(/,/).map { |x| x.gsub(/^/, '-i ') } : [ "" ]
+	protos, ports, states = dest.split(/[:\[]/).collect { |x| x.empty? ? nil : x.gsub(/\]$/, '') }
+	states_opt = states ? "-m state --state #{states}" : ""
+	protos_array = protos.split(/,/)
+	ports_array = ports.split(/,/)
+	hitcount, seconds = rate.gsub(/^\</, '').split(/\//).collect { |x| x.empty? ? nil : x }
+	recent_action = rate =~ /^\</ ? "rcheck" : "update"
+	intfs_array.each do |intf| protos_array.each do |proto| ports_array.each do |port| list_name="#{proto}_#{port}#{intf.gsub(/^ -i/, '')}"
+	%>$IPTABLES -A INPUT <%= intf %> -p <%= proto %> --dport <%= port %> <%= states_opt %> -m recent --name <%= list_name %> --set
+$IPTABLES -A INPUT <%= intf %> -p <%= proto %> --dport <%= port %> <%= states_opt %> -m recent --name <%= list_name %> --<%= recent_action %> --seconds <%= seconds %> --hitcount <%= hitcount %> -j <%= action %>
+<% end ; end ; end ; end %>
+
+### DEFINE FORWARDS
+<% iptables_forwards.split(/ /).each do |forward|
+	dest, fullsrc, protos = forward.split(/[\>;]/).collect { |x| x.empty? ? nil : x }
+	src, intf = fullsrc.split(/[\#]/).collect { |x| x.empty? ? nil : x }
+	opt_intf = intf ? "-i #{intf}" : ""
+	srcip, srcport = src.split(/:/).collect { |x| x.empty? ? nil : x }
+	opt_srcip = srcip ? "-d #{srcip}" : ""
+	opt_srcport = srcport ? "--dport #{srcport}" : ""
+	destip, destport = dest.split(/:/).collect { |x| x.empty? ? nil : x }
+	opt_destip = destip ? "-d #{destip}" : ""
+	opt_destport = destport ? "--dport #{destport}" : ""
+	protos_array = protos.split(/,/).collect { |x| x.empty? ? nil : x }
+	protos_array.each do |proto|
+	%>
+# define forward in the nat chain, redirect to the destination IP and port
+$IPTABLES -t nat -A PREROUTING -p <%= proto %> <%= opt_intf %> <%= opt_srcip %> <%= opt_srcport %> -j DNAT --to <%= destip %>:<%= destport %>
+# allow access to the destination IP and port in the FORWARD chain
+$IPTABLES -A FORWARD -p <%= proto %> <%= opt_intf %> <%= opt_destip %> <%= opt_destport %> -j ACCEPT
+<% end ; end %>
+
+### SET_ALLOWED_RULES / SET_DROP_RULES / SET_REJECT_RULES
+<% {
+	"-j ACCEPT" => iptables_allowed,
+	"-m recent --name droplist --set -j DROP" => iptables_drop,
+	"-m recent --name rejectlist --set -j REJECT" => iptables_reject
+}.each do |action, rulesdef| rulesdef.each do |ruledef|
+	targetdef, sourcedef = ruledef.split(/@/).collect { |x| x.empty? ? nil : x }
+	sourcedefs = sourcedef ?
+		sourcedef.split(/,/).map do |x|
+			src, intf = x.split(/\#/).collect { |x| x.empty? ? nil : x }
+			opt_intf = intf ? "-i #{intf}" : nil
+			["-s #{src}", opt_intf].compact.join(' ')
+		end : [ "" ]
+
+	targetdefs = targetdef ? targetdef.split(/;/).collect { |x| x.empty? ? nil : x }.compact : [ "" ]
+	sourcedefs.each do |src|
+		targetdefs.each do |target|
+			dest, intf = target.split(/[\#]/).collect { |x| x.empty? ? nil : x }
+			opt_intf = intf ? "-i #{intf}" : nil
+			protos = dest.split(/:/)[0].split(/,/)
+			ports = dest.split(/:/)[1]
+			ports_args = ports ? ports.split(/,/) : [ "" ]
+			protos.each do |proto| ports_opt = ports ? (proto == "icmp" ? "--icmp-type" : "--dport") : ""
+				ports.each do |port|
+	%>$IPTABLES -A INPUT -p <%= proto %> <%= opt_intf %> <%= src %> -m state --state NEW <%= ports_opt %> <%= port %> <%= action %>
+<% end ; end ; end ; end ; end ; end %>

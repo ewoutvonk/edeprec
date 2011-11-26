@@ -1,0 +1,95 @@
+#!/bin/bash
+
+# Author: Chris AtLee <chris@atlee.ca>
+# Patched by: Matthias Albert < matthias@linux4experts.de>
+# Patched by: le1t0@github <dev@ewout.to> (rewrite for supporting multiple configs/daemons)
+
+PATH=/sbin:/usr/sbin:/bin:/usr/bin
+NAME=glusterfsd
+SCRIPTNAME=/etc/init.d/$NAME
+DAEMON=/usr/sbin/$NAME
+
+function configs () {
+  find /etc/glusterfs -name "*-export.vol" | while read e ; do echo "$(basename "${e}" -export.vol | perl -p -e 's/^([0-9]{1,3}\.){3}[0-9]{1,3}-//'),${e}" ; done
+}
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+# Load the VERBOSE setting and other rcS variables
+. /lib/init/vars.sh
+
+# Define LSB log_* functions.
+. /lib/lsb/init-functions
+
+function do_start() {
+	configs | while read c ; do {
+		n="$(echo $c | awk -F "," '{ print $1; }')"
+		pidfile=/var/run/${NAME}_${n}.pid
+		configfile="$(echo $c | awk -F "," '{ print $2; }')"
+		glusterfs_opts="-f $configfile"
+		
+	    pidofproc -p $pidfile $DAEMON >/dev/null
+	    status=$?
+	    if [ $status -eq 0 ]; then
+	      log_success_msg "glusterfs server for ${n} is already running with pid $(test -f $pidfile && cat $pidfile)"
+	    else
+	      log_daemon_msg "Starting glusterfs server for ${n}" "glusterfsd"
+	      start-stop-daemon --start --quiet --oknodo --pidfile $pidfile --startas $DAEMON -- -p $pidfile $glusterfs_opts
+	      log_end_msg $?
+	      start_daemon -p $pidfile $DAEMON -f $configfile
+	    fi ;
+	} ; done
+}
+
+function do_stop() {
+	configs | while read c ; do {
+		n="$(echo $c | awk -F "," '{ print $1; }')"
+		pidfile=/var/run/${NAME}_${n}.pid
+
+	    log_daemon_msg "Stopping glusterfs server for ${n}" "glusterfsd"
+	    start-stop-daemon --stop --quiet --oknodo --pidfile $pidfile
+	    log_end_msg $?
+	    rm -f $pidfile
+	    killproc -p $pidfile $DAEMON ;
+	} ; done
+}
+
+function do_status() {
+	exit_status=0
+	configs | while read c ; do {
+		n="$(echo $c | awk -F "," '{ print $1; }')"
+		pidfile=/var/run/${NAME}_${n}.pid
+
+        pidofproc -p $pidfile $DAEMON >/dev/null
+	    status=$?
+	    if [ $status -eq 0 ]; then
+	      log_success_msg "glusterfs server for ${n} is running with pid $(test -f $pidfile && cat $pidfile)"
+	    else
+	      log_failure_msg "glusterfs server for ${n} is not running."
+		  exit_status=$status
+	    fi;
+	} ; done
+	exit $exit_status
+}
+
+case "$1" in
+  start)
+        do_start
+        ;;
+  stop)
+        do_stop
+        ;;
+  status)
+        do_status
+        ;;
+  restart|force-reload)
+        do_stop
+        sleep 2
+        do_start
+        ;;
+  *)
+        echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+        exit 3
+        ;;
+esac

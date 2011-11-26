@@ -1,0 +1,14 @@
+#!/bin/bash
+
+prefix=$1
+
+#
+#  Source our common functions
+#
+if [ -e /usr/lib/xen-tools/common.sh ]; then
+   . /usr/lib/xen-tools/common.sh
+else
+   . ./hooks/common.sh
+fi
+
+chroot ${prefix} mount devpts /dev/pts -t devpts

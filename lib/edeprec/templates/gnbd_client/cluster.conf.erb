@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<cluster name="<%= redhat_cluster_name %>" config_version="<%= redhat_cluster_config_version %>">
+<cman>
+</cman>
+<clusternodes>
+<clusternodes>
+<% count=1
+   redhat_cluster_nodes.each do |node| %>
+<clusternode name="<%= node[:name] %>" nodeid="<%= count %>">
+        <fence><% redhat_cluster_fence_methods.each do |meth| %>
+		        <method name="<%= meth[:name] %>">
+		          <device name="<%= meth[:device_name] %>" nodename="<%= node[:name] %>"/>
+		        </method><% end %>
+        </fence>
+</clusternode>
+<% count+=1 ; end %>
+</clusternodes>
+<fencedevices><% redhat_cluster_fence_methods.each do |meth| %>
+		<fencedevice name="<%= meth[:device_name] %>" <% meth[:options].each do |k,v| %><%= "#{k}=\"#{v}\" " %><% end %> /><% end %>
+</fencedevices>
+</cluster>

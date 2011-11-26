@@ -1,0 +1,10 @@
+0.9.9:
+- move recipes from edeprec namespace to ubuntu/linux/lucid/hardy
+
+1.0.0:
+- unit tests
+
+1.1.0:
+- tool (installation), application (configuration), service (instantiation), permanent_service (activation)
+- profiles based on roles (with same name) + server profile for generic stuff + dynamically defined profiles based on server profiles + roles profiles, profile name is same as server name + task servers:install which runs corresponding profile (dynamically define profiles based on roles defined in recipes).
+- deprec recipe for redmine which uses top.deploy.default for installation

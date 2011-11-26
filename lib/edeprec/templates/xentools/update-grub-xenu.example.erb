@@ -1,0 +1,4 @@
+#!/bin/sh
+
+mkdir -p /boot/grub
+find /boot -name "vmlinuz-2.6.*-xen" | awk -v root="$(cat /etc/fstab | awk '{ if($2=="/") { print $1; }; }')" -F "-" 'BEGIN { v=0; kv=0; uv=0; } { gsub("\.", "-"); nv=$4*1000000+$5; if(nv>v) { v=nv; uv=$5; kv=$4; } ; } END { kernel="2.6."kv"-"uv"-xen"; print "title  TruvoLabs"; print "kernel /boot/vmlinuz-"kernel" root="root" ro"; print "initrd /boot/initrd.img-"kernel; }' > /boot/grub/menu.lst

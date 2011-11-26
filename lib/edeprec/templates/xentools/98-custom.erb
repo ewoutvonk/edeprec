@@ -1,0 +1,42 @@
+#!/bin/bash
+
+prefix=$1
+
+#
+#  Source our common functions
+#
+if [ -e /usr/lib/xen-tools/common.sh ]; then
+   . /usr/lib/xen-tools/common.sh
+else
+   . ./hooks/common.sh
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+<% if xentools_custom_commands_pre %><%= xentools_custom_commands_pre %>
+<% end %><% if xentools_no_utc %>perl -p -i -e 's/UTC=yes/UTC=no/' ${prefix}/etc/default/rcS
+<% end %><% if xentools_enable_sudo_in_sudoers %>perl -p -i -e 's/# (%sudo)/$1/' ${prefix}/etc/sudoers
+<% end %><% if xentools_deploy_user %>chroot ${prefix} useradd -G sudo -m -s /bin/bash <%= xentools_deploy_user %>
+<% end %><% if xentools_deploy_user %>mkdir -p ${prefix}/home/<%= xentools_deploy_user %>/.ssh
+<% end %><% if xentools_deploy_user %>cp ~/.ssh/authorized_keys ${prefix}/home/<%= xentools_deploy_user %>/.ssh/
+<% end %><% if xentools_deploy_user %>chmod 700 ${prefix}/home/<%= xentools_deploy_user %>/.ssh
+<% end %><% if xentools_deploy_user %>chmod 600 ${prefix}/home/<%= xentools_deploy_user %>/.ssh/authorized_keys
+<% end %><% if xentools_deploy_user && xentools_deploy_group %>chroot ${prefix} chown -R <%= xentools_deploy_user %>:<%= xentools_deploy_group %> /home/<%= xentools_deploy_user %>/.ssh
+<% end %><% if xentools_copy_localtime %>cp /etc/localtime ${prefix}/etc/
+<% end %><% if xentools_disable_hwclock %>chmod 644 ${prefix}/sbin/hwclock
+cat <<EOF >${prefix}/etc/init.d/disable-hwclock
+#!/bin/bash
+
+chmod 644 /sbin/hwclock
+
+EOF
+chmod 755 ${prefix}/etc/init.d/disable-hwclock
+chroot ${prefix} /usr/sbin/update-rc.d disable-hwclock start 03 0 6 . stop 03 0 6 .
+<% end %><% if xentools_dist_upgrade %>chroot ${prefix} /usr/bin/apt-get -y dist-upgrade
+<% end %><% if xentools_default_bootloader %>mkdir -p ${prefix}/usr/local/bin/
+cp /usr/local/share/xen-tools/update-grub-xenu.example ${prefix}/usr/local/bin/update-grub-xenu
+cp /usr/local/share/xen-tools/kernel-img.conf.example ${prefix}/etc/kernel-img.conf
+chmod 755 ${prefix}/usr/local/bin/update-grub-xenu
+installDebianPackage ${prefix} linux-xen
+<% end %><% if xentools_disable_hwclock %>chmod 644 ${prefix}/sbin/hwclock
+<% end %><% if xentools_custom_commands_post %><%= xentools_custom_commands_post %>
+<% end %>

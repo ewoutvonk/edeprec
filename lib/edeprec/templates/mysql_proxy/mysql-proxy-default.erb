@@ -1,0 +1,4 @@
+# Set ENABLED to 1 if you want the init script to start haproxy.
+ENABLED=1
+# Add extra flags here.
+EXTRAOPTS="<% mysql_proxy_backend_servers.each do |srv| %> --proxy-backend-addresses=<%= srv %><% end %><% mysql_proxy_read_only_backend_servers.each do |srv| %> --proxy-read-only-backend-address=<%= srv %><% end %>"

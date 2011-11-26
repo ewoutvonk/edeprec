@@ -1,0 +1,3 @@
+aws_access_key_id: <%= s3utils_access_key %>
+aws_secret_access_key: <%= s3utils_secret_key %>
+aws_calling_format: <%= s3utils_calling_format %>

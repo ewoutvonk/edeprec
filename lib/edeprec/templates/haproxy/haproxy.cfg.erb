@@ -1,0 +1,37 @@
+# /etc/haproxy.cfg
+#
+# Reload gracefully with:
+#
+# haproxy -f /etc/haproxy.cfg -sf `cat /var/run/haproxy.pid`
+#
+global
+      user <%= haproxy_user %>
+      group <%= haproxy_group %>
+<% haproxy_global_options.each do |key, values| [values].flatten.each do |value| %>
+      <%= key %><% if value && value != true  %> <%= value %><% end %>
+<% end end %>
+
+defaults
+<% unless haproxy_default_options[:stats_auth].nil? || haproxy_default_options[:stats_auth].empty? %>
+      stats enable
+      stats auth <%= haproxy_default_options[:stats_auth] %>
+<% end %>
+<% (haproxy_default_options[:options] || {}).each do |key, values| [values].flatten.each do |value| %>
+      <%= key %><% if value && value != true  %> <%= value %><% end %>
+<% end end %>
+
+<% haproxy_instances.each_with_index do |instance_ipport, i| %>
+<% ipport = instance_ipport.first %>
+<% instance = instance_ipport.last %>
+listen <%= instance[:name] || "no_name_defined_#{i+1}" %> <%= ipport %>
+<% (instance[:options] || {}).each do |key, values| [values].flatten.each do |value| %>
+      <%= key %> <%= value %>
+<% end end %>
+<% unless instance[:stats_auth].nil? || instance[:stats_auth].empty? %>
+      stats enable
+      stats <%= instance[:stats_auth] %>
+<% end %>
+<% (instance[:servers] || {}).each do |key, value| %>
+      server <%= key %><% if value && value != true  %> <%= value %><% end %>
+<% end %>
+<% end %>

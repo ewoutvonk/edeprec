@@ -1,0 +1,110 @@
+#
+# Configuration file for the Xen instance {$hostname}, created
+# by xen-tools {$xen_tools_version} on { scalar localtime }.
+#
+
+#
+#  Kernel + memory size
+#
+{ if ( ( $kernel ) && ( !defined($bootloader)) )
+  {
+    $OUT.= "kernel      = '$kernel'\n";
+  }
+}
+{ if ( ( $initrd ) && ( !defined($bootloader)) )
+  {
+    $OUT.= "ramdisk     = '$initrd'\n";
+  }
+}
+{ if ( $bootloader )
+  {
+    $OUT .= "bootloader = '$bootloader'\n";
+  }
+}
+memory      = '{$memory}'
+
+#
+#  Disk device(s).
+#
+{ 
+  $ROOTDISKOUT = "";
+  for ( my $i = 0; $i <= $#PARTITIONS; $i++ )
+  {
+      if ( $PARTITIONS[$i]{'mountpoint'} eq '/' )
+      {
+          $ROOTDISKOUT = "                  '$PARTITIONS[$i]{'imagetype'}$PARTITIONS[$i]{'image'},$device" . ( $i + 1 ) .",w',\n";
+          $OUT .= "root        = '/dev/$device" . ($i + 1) . " ro'\n";
+      }
+  }
+  $OUT .= "disk        = [\n";
+  $OUT .= $ROOTDISKOUT;
+  for ( my $i = 0; $i <= $#PARTITIONS; $i++ )
+  {
+      if ( $PARTITIONS[$i]{'mountpoint'} ne '/' )
+      {
+          $OUT .= "                  '$PARTITIONS[$i]{'imagetype'}$PARTITIONS[$i]{'image'},$device" . ( $i + 1 ) .",w',\n";
+      }
+  }
+  $OUT .= "              ]\n";
+}
+
+#
+#  Hostname
+#
+name        = '{$hostname}'
+
+#
+#  Networking
+#
+{ if ( $dhcp )
+  {
+    $OUT .= "dhcp        = 'dhcp'\n";
+
+    # Setup the mac address, if present.
+    my $m = '';
+    if ( $mac )
+    {
+      $m = "mac=$mac"
+    }
+
+    $OUT .= "vif         = [ '$m' ]";
+  }
+  else
+  {
+    #
+    # Setup the mac address, if present.
+    #
+    my $m = '';
+    if ( $mac )
+    {
+      $m = ",mac=$mac"
+    }
+
+    my $vn = '';
+    if ( $vifname )
+    {
+      $vn = ",vifname=$vifname";
+    }
+
+    $OUT .= "vif         = [ 'ip=$ip1";
+    $OUT .= "$m";
+    $OUT .= "$vn";
+    $OUT .= "' ]";
+  }
+}
+
+#
+#  Behaviour
+#
+on_poweroff = 'destroy'
+on_reboot   = 'restart'
+on_crash    = 'restart'
+
+
+{ if ( $admins )
+  {
+    $OUT .= "xen_shell = '$admins'\n";
+  }
+}
+
+extra = '2 console=xvc0'

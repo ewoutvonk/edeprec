@@ -1,0 +1,103 @@
+[client]
+<% if mysql_client_port %>port = <%= mysql_client_port %><% end %>
+<% if mysql_client_socket %>socket = <%= mysql_client_socket %><% end %>
+
+[mysql]
+<% if mysql_mysql_default_character_set %>default-character-set = <%= mysql_mysql_default_character_set %><% end %>
+<% if mysql_mysql_no_auto_rehash %>no-auto-rehash<% end %>
+
+[mysqld_safe]
+<% if mysql_mysqld_safe_socket %>socket = <%= mysql_mysqld_safe_socket %><% end %>
+<% if mysql_mysqld_safe_nice %>nice = <%= mysql_mysqld_safe_nice %><% end %>
+
+[mysqldump]
+<% if mysql_mysqldump_max_allowed_packet %>max_allowed_packet = <%= mysql_mysqldump_max_allowed_packet %><% end %>
+<% if mysql_mysqldump_quote_names %>quote-names<% end %>
+<% if mysql_mysqldump_quick %>quick<% end %>
+
+[isamchk]
+<% if mysql_isamchk_key_buffer %>key_buffer = <%= mysql_isamchk_key_buffer %><% end %>
+<% if mysql_isamchk_sort_buffer_size %>sort_buffer_size = <%= mysql_isamchk_sort_buffer_size %><% end %>
+<% if mysql_isamchk_read_buffer %>read_buffer = <%= mysql_isamchk_read_buffer %><% end %>
+<% if mysql_isamchk_write_buffer %>write_buffer = <%= mysql_isamchk_write_buffer %><% end %>
+
+[myisamchk]
+<% if mysql_myisamchk_key_buffer %>key_buffer = <%= mysql_myisamchk_key_buffer %><% end %>
+<% if mysql_myisamchk_sort_buffer_size %>sort_buffer_size = <%= mysql_myisamchk_sort_buffer_size %><% end %>
+<% if mysql_myisamchk_read_buffer %>read_buffer = <%= mysql_myisamchk_read_buffer %><% end %>
+<% if mysql_myisamchk_write_buffer %>write_buffer = <%= mysql_myisamchk_write_buffer %><% end %>
+
+[mysqld]
+<% if mysql_mysqld_innodb_force_recovery %>innodb_force_recovery = <%= mysql_mysqld_innodb_force_recovery %><% end %>
+<% if mysql_mysqld_user %>user = <%= mysql_mysqld_user %><% end %>
+<% if mysql_mysqld_pid_file %>pid-file = <%= mysql_mysqld_pid_file %><% end %>
+<% if mysql_mysqld_socket %>socket = <%= mysql_mysqld_socket %><% end %>
+<% if mysql_mysqld_port %>port = <%= mysql_mysqld_port %><% end %>
+<% if mysql_mysqld_basedir %>basedir = <%= mysql_mysqld_basedir %><% end %>
+<% if mysql_mysqld_datadir %>datadir = <%= mysql_mysqld_datadir %><% end %>
+<% if mysql_mysqld_tmpdir %>tmpdir = <%= mysql_mysqld_tmpdir %><% end %>
+<% if mysql_mysqld_language %>language = <%= mysql_mysqld_language %><% end %>
+<% if mysql_mysqld_default_storage_engine %>default-storage-engine = <%= mysql_mysqld_default_storage_engine %><% end %>
+<% if mysql_mysqld_skip_external_locking %>skip-external-locking<% end %>
+<% if mysql_mysqld_skip_bdb %>skip-bdb<% end %>
+<% if mysql_mysqld_skip_innodb %>skip-innodb<% end %>
+<% if mysql_mysqld_bind_address %>bind-address = <%= mysql_mysqld_bind_address %><% end %>
+
+<% if mysql_mysqld_default_character_set %>default-character-set = <%= mysql_mysqld_default_character_set %><% end %>
+<% if mysql_mysqld_character_set_server %>character-set-server = <%= mysql_mysqld_character_set_server %><% end %>
+<% if mysql_mysqld_collation_server %>collation-server = <%= mysql_mysqld_collation_server %><% end %>
+<% if mysql_mysqld_group_concat_max_len %>group_concat_max_len = <%= mysql_mysqld_group_concat_max_len %><% end %>
+<% if mysql_mysqld_innodb_file_per_table %>innodb_file_per_table<% end %>
+
+<% if mysql_mysqld_thread_cache_size %>thread_cache_size = <%= mysql_mysqld_thread_cache_size %><% end %>
+<% if mysql_mysqld_thread_stack %>thread_stack = <%= mysql_mysqld_thread_stack %><% end %>
+<% if mysql_mysqld_max_allowed_packet %>max_allowed_packet = <%= mysql_mysqld_max_allowed_packet %><% end %>
+<% if mysql_mysqld_table_cache %>table_cache = <%= mysql_mysqld_table_cache %><% end %>
+<% if mysql_mysqld_innodb_log_buffer_size %>innodb_log_buffer_size = <%= mysql_mysqld_innodb_log_buffer_size %><% end %>
+<% if mysql_mysqld_innodb_additional_mem_pool_size %>innodb_additional_mem_pool_size = <%= mysql_mysqld_innodb_additional_mem_pool_size %><% end %>
+<% if mysql_mysqld_innodb_flush_method %>innodb_flush_method = <%= mysql_mysqld_innodb_flush_method %><% end %>
+<% if mysql_mysqld_thread_concurrency %>thread_concurrency = <%= mysql_mysqld_thread_concurrency %><% end %>
+<% if mysql_mysqld_innodb_thread_concurrency %>innodb_thread_concurrency = <%= mysql_mysqld_innodb_thread_concurrency %><% end %>
+<% if mysql_mysqld_max_connections %>max_connections = <%= mysql_mysqld_max_connections %><% end %>
+<% if mysql_mysqld_read_buffer_size %>read_buffer_size = <%= mysql_mysqld_read_buffer_size %><% end %>
+<% if mysql_mysqld_read_rnd_buffer_size %>read_rnd_buffer_size = <%= mysql_mysqld_read_rnd_buffer_size %><% end %>
+<% if mysql_mysqld_sort_buffer_size %>sort_buffer_size = <%= mysql_mysqld_sort_buffer_size %><% end %>
+<% if mysql_mysqld_innodb_buffer_pool_size %>innodb_buffer_pool_size = <%= mysql_mysqld_innodb_buffer_pool_size %><% end %>
+<% if mysql_mysqld_key_buffer %>key_buffer = <%= mysql_mysqld_key_buffer %><% end %>
+<% if mysql_mysqld_query_cache_limit %>query_cache_limit = <%= mysql_mysqld_query_cache_limit %><% end %>
+<% if mysql_mysqld_query_cache_size %>query_cache_size = <%= mysql_mysqld_query_cache_size %><% end %>
+<% if mysql_mysqld_query_cache_type %>query_cache_type = <%= mysql_mysqld_query_cache_type %><% end %>
+<% if mysql_mysqld_tmp_table_size %>tmp_table_size = <%= mysql_mysqld_tmp_table_size %><% end %>
+<% if mysql_mysqld_max_heap_table_size %>max_heap_table_size = <%= mysql_mysqld_max_heap_table_size %><% end %>
+<% if mysql_mysqld_innodb_log_file_size %>innodb_log_file_size = <%= mysql_mysqld_innodb_log_file_size %><% end %>
+
+<% if mysql_mysqld_log %>log = <%= mysql_mysqld_log %><% end %>
+<% if mysql_mysqld_log_error %>log_error = <%= mysql_mysqld_log_error %><% end %>
+<% if mysql_mysqld_log_warnings %>log_warnings = <%= mysql_mysqld_log_warnings %><% end %>
+<% if mysql_mysqld_binlog_do_db %>binlog_do_db = <%= mysql_mysqld_binlog_do_db %><% end %>
+<% if mysql_mysqld_binlog_ignore_db %>binlog_ignore_db = <%= mysql_mysqld_binlog_ignore_db %><% end %>
+<% if mysql_mysqld_log_bin %>log_bin = <%= mysql_mysqld_log_bin %><% end %>
+<% if mysql_mysqld_relay_log %>relay_log = <%= mysql_mysqld_relay_log %><% end %>
+<% if mysql_mysqld_relay_log_info_file %>relay_log_info_file = <%= mysql_mysqld_relay_log_info_file %><% end %>
+<% if mysql_mysqld_relay_log_index %>relay_log_index = <%= mysql_mysqld_relay_log_index %><% end %>
+<% if mysql_mysqld_expire_logs_days %>expire_logs_days = <%= mysql_mysqld_expire_logs_days %><% end %>
+<% if mysql_mysqld_max_binlog_size %>max_binlog_size = <%= mysql_mysqld_max_binlog_size %><% end %>
+<% if mysql_mysqld_log_slow_queries %>log_slow_queries = <%= mysql_mysqld_log_slow_queries %><% end %>
+<% if mysql_mysqld_long_query_time %>long_query_time = <%= mysql_mysqld_long_query_time %><% end %>
+<% if mysql_mysqld_log_slave_updates %>log_slave_updates<% end %>
+<% if mysql_mysqld_log_queries_not_using_indexes %>log-queries-not-using-indexes<% end %>
+
+<% if mysql_mysqld_server_id %>server_id = <%= mysql_mysqld_server_id %><% end %>
+<% if mysql_mysqld_auto_increment_increment %>auto_increment_increment = <%= mysql_mysqld_auto_increment_increment %><% end %>
+<% if mysql_mysqld_auto_increment_offset %>auto_increment_offset = <%= mysql_mysqld_auto_increment_offset %><% end %>
+<% if mysql_mysqld_master_host %>master_host = <%= mysql_mysqld_master_host %><% end %>
+<% if mysql_mysqld_master_user %>master_user = <%= mysql_mysqld_master_user %><% end %>
+<% if mysql_mysqld_master_password %>master_password = <%= mysql_mysqld_master_password %><% end %>
+<% if mysql_mysqld_report_host %>report_host = <%= mysql_mysqld_report_host %><% end %>
+<% if mysql_mysqld_replicate_wild_ignore_table %>replicate_wild_ignore_table = <%= mysql_mysqld_replicate_wild_ignore_table %><% end %>
+
+<% if mysql_mysqld_ssl_ca %> = <%= mysql_mysqld_ssl_ca %><% end %>
+<% if mysql_mysqld_ssl_cert %> = <%= mysql_mysqld_ssl_cert %><% end %>
+<% if mysql_mysqld_ssl_key %> = <%= mysql_mysqld_ssl_key %><% end %>
+
+!includedir /etc/mysql/conf.d/
