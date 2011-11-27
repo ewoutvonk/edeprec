@@ -30,10 +30,7 @@ if caller.any? { |callstack_line| callstack_line =~ /^Capfile:/ }
     require "#{ext}"
   end
 
-  Dir.glob("#{File.dirname(__FILE__)}/edeprec/recipes/**/*.rb").collect do |filename|
-    require filename
-  end
-
+  require "edeprec/recipes"
   require "edeprec/profiles"
 
   [ :edeprec, :ubuntu, :hardy, :lucid ].each do |base_namespace|
